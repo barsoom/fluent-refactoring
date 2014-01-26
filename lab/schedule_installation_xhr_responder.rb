@@ -3,11 +3,13 @@ class ScheduleInstallationXhrResponder
 
   delegate :request, :render, :schedule_response, :installation, to: :controller
 
-  def installation_scheduling_complete
-  end
-
   def credit_check_is_pending
     render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
+  end
+
+  def installation_scheduled
+    date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
+    render :json => {:errors => nil, :html => schedule_response(installation, date)}
   end
 
   def installation_failed(exception)
@@ -24,12 +26,10 @@ class ScheduleInstallationXhrResponder
     render :json => {:errors => [error_message] }
   end
 
-  def installation_scheduled
-    date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
-    render :json => {:errors => nil, :html => schedule_response(installation, date)}
-  end
-
   def could_not_schedule_installation
     render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
+  end
+
+  def installation_scheduling_complete
   end
 end
