@@ -7,6 +7,11 @@ require_relative "schedule_installation_web_responder"
 # - schedule_response just exists somewhere on the stubbed controller
 # - xhr does not have a successful response
 # - xhr responds in multiple ways, seems like the API design could be improved
+# - dumping exception messages out to the user...
+#
+# If I really worked on this app I would take a deeper look and probably
+# refactor the models a bit too. Not only code problems here, usability,
+# unknown states, ...
 
 class InstallationsController < ActionController::Base
   # lots more stuff...
