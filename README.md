@@ -10,6 +10,11 @@ Getting Started
 
 Code is in <a href="./lab/installations_controller.rb">lab/installations_controller.rb</a>.  There is a set of mock-driven characterization tests in <a href="./lab/installations_controller_spec.rb">lab/installations_controller_spec.rb</a>.  (These specs are relatively strict; for example, they will complain if you add a catch-all rescue clause to the request.xhr? branch!)
 
+Barsoomians:
+
+* gem install bundler && bundle
+* use the normal shortcuts to run tests
+
 There are also some convenience scripts:
 
 * `lab/spec` will run the specs

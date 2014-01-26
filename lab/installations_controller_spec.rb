@@ -1,4 +1,22 @@
-require 'active_support'
+# That iconv is depricated is not relevant for this exersise but very annoying.
+module Kernel
+  alias_method :old_require, :require
+  def require(*opts)
+    require_iconv = opts.to_s.include?("iconv")
+
+    if require_iconv
+      previous_stderr, $stderr = $stderr, StringIO.new
+    end
+
+    old_require(*opts)
+
+    if require_iconv
+      $stderr = previous_stderr
+    end
+  end
+end
+
+require 'active_support/core_ext'
 
 # stub out dependencies
 module ActionController
