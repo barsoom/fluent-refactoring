@@ -1,54 +1,45 @@
+require "attr_extras"
+require_relative "schedule_installation"
+require_relative "schedule_installation_xhr_responder"
+require_relative "schedule_installation_web_responder"
+
+# Odd things:
+# - schedule_response just exists somewhere on the stubbed controller
+# - xhr does not have a successful response
+# - xhr responds in multiple ways, seems like the API design could be improved
+
 class InstallationsController < ActionController::Base
   # lots more stuff...
 
+  attr_private :installation
+
   def schedule
-    desired_date = params[:desired_date]
-    if request.xhr?
-      begin
-        if @installation.pending_credit_check?
-          render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
-          return
-        end
-        audit_trail_for(current_user) do
-          if @installation.schedule!(desired_date, :installation_type => params[:installation_type], :city => @city)
-            if @installation.scheduled_date
-              date = @installation.scheduled_date.in_time_zone(@installation.city.timezone).to_date
-              render :json => {:errors => nil, :html => schedule_response(@installation, date)}
-            end
-          else
-            render :json => {:errors => [%Q{Could not update installation. #{@installation.errors.full_messages.join(' ')}}] }
-          end
-        end
-      rescue ActiveRecord::RecordInvalid => e
-        render :json => {:errors => [e.message] }
-      rescue ArgumentError => e
-        render :json => {:errors => ["Could not schedule installation. Start by making sure the desired date is on a business day."]}
-      end
-    else
-      if @installation.pending_credit_check?
-        flash[:error] = "Cannot schedule installation while credit check is pending"
-        redirect_to installations_path(:city_id => @installation.city_id, :view => "calendar") and return
-      end
-      begin
-        audit_trail_for(current_user) do
-          if @installation.schedule!(desired_date, :installation_type => params[:installation_type], :city => @city)
-            if @installation.scheduled_date
-              if @installation.customer_provided_equipment?
-                flash[:success] = %Q{Installation scheduled}
-              else
-                flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
-              end
-            end
-          else
-            flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
-          end
-        end
-      rescue => e
-        flash[:error] = e.message
-      end
-      redirect_to(@installation.customer_provided_equipment? ? customer_provided_installations_path : installations_path(:city_id => @installation.city_id, :view => "calendar"))
+    with_audit_trail do
+      ScheduleInstallation.new(installation, installation_type, desired_date, schedule_responder).run
     end
   end
 
-  # lots more stuff...
+  private
+
+  def schedule_responder
+    if request.xhr?
+      ScheduleInstallationXhrResponder.new(self)
+    else
+      ScheduleInstallationWebResponder.new(self)
+    end
+  end
+
+  def installation_type
+    params[:installation_type]
+  end
+
+  def desired_date
+    params[:desired_date]
+  end
+
+  def with_audit_trail(&block)
+    audit_trail_for(current_user, &block)
+  end
+
+# lots more stuff...
 end
