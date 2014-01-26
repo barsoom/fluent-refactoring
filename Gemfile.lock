@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     activesupport (2.3.18)
+    attr_extras (1.1.0)
     diff-lcs (1.2.4)
     grit (2.5.0)
       diff-lcs (~> 1.1)
@@ -23,5 +24,6 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport (~> 2.3.18)
+  attr_extras
   grit
   rspec (~> 2.13.0)
