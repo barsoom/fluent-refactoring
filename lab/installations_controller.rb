@@ -4,8 +4,8 @@ require_relative "schedule_installation_xhr_responder"
 require_relative "schedule_installation_web_responder"
 
 # Odd things:
-# - schedule_response just exists somewhere on the stubbed controller
-# - xhr does not have a successful response
+# - schedule_response just exists somewhere on the stubbed controller (would like
+#   to move it outside the controller)
 # - xhr responds in multiple ways, seems like the API design could be improved
 # - dumping exception messages out to the user...
 #
