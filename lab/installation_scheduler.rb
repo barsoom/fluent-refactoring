@@ -7,27 +7,6 @@ class InstallationScheduler
     end
   end
 
-  def render_success
-    if xhr?
-      date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
-      client.render :json => {:errors => nil, :html => client.schedule_response(installation, date)}
-    else
-      if installation.customer_provided_equipment?
-        client.flash[:success] = %Q{Installation scheduled}
-      else
-        client.flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
-      end
-    end
-  end
-
-  def render_error(error)
-    if xhr?
-        client.render :json => {:errors => [error]}
-    else
-      client.flash[:error] = error
-    end
-  end
-
   def run
     desired_date = client.params[:desired_date]
 
@@ -43,7 +22,7 @@ class InstallationScheduler
             render_success
           end
         else
-          client.render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
+          render_error(%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}})
         end
       rescue ActiveRecord::RecordInvalid => e
         render_error e.message
@@ -67,6 +46,27 @@ class InstallationScheduler
   end
 
   private
+
+  def render_success
+    if xhr?
+      date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
+      client.render :json => {:errors => nil, :html => client.schedule_response(installation, date)}
+    else
+      if installation.customer_provided_equipment?
+        client.flash[:success] = %Q{Installation scheduled}
+      else
+        client.flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
+      end
+    end
+  end
+
+  def render_error(error)
+    if xhr?
+      client.render :json => {:errors => [error]}
+    else
+      client.flash[:error] = error
+    end
+  end
 
   def xhr?
     client.request.xhr?
