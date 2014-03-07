@@ -5,7 +5,7 @@ class InstallationsController < ActionController::Base
   # lots more stuff...
 
   def schedule
-    InstallationScheduler.new(self, @installation, current_user).run
+    InstallationScheduler.new(self, @installation, current_user).run_with_audit
   end
 
   # lots more stuff...
