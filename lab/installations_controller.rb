@@ -15,8 +15,7 @@ class ScheduleInstallation
     if request.xhr?
       begin
         if installation.pending_credit_check?
-          # event: pending
-          render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
+          responder.pending_credit_check(installation)
           return
         end
         audit_trail_for(current_user) do
@@ -36,9 +35,8 @@ class ScheduleInstallation
       end
     else
       if installation.pending_credit_check?
-        # pending
-        flash[:error] = "Cannot schedule installation while credit check is pending"
-        redirect_to installations_path(:city_id => installation.city_id, :view => "calendar") and return
+        responder.pending_credit_check(installation)
+        return
       end
       begin
         audit_trail_for(current_user) do
@@ -74,6 +72,10 @@ class InstallationsController < ActionController::Base
   class ScheduleAjaxResponder
     pattr_initialize :controller
 
+    def pending_credit_check(installation)
+      render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
+    end
+
     delegate :request, :current_user,
       :redirect_to, :flash, :render,
       :audit_trail_for, :schedule_response,
@@ -83,6 +85,11 @@ class InstallationsController < ActionController::Base
 
   class ScheduleHtmlResponder
     pattr_initialize :controller
+
+    def pending_credit_check(installation)
+      flash[:error] = "Cannot schedule installation while credit check is pending"
+      redirect_to installations_path(:city_id => installation.city_id, :view => "calendar")
+    end
 
     delegate :request, :current_user,
       :redirect_to, :flash, :render,
