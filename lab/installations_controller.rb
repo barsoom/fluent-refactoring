@@ -22,11 +22,13 @@ class ScheduleInstallation
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
+              # A
               date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
               render :json => {:errors => nil, :html => schedule_response(installation, date)}
+              # end A
             end
           else
-            render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
+            responder.installation_failed(installation)
           end
         end
       rescue ActiveRecord::RecordInvalid => e
@@ -39,14 +41,16 @@ class ScheduleInstallation
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
+              # A
               if installation.customer_provided_equipment?
                 flash[:success] = %Q{Installation scheduled}
               else
                 flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
               end
+              # end A
             end
           else
-            flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
+            responder.installation_failed(installation)
           end
         end
       rescue => e
@@ -73,6 +77,10 @@ class InstallationsController < ActionController::Base
       render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
     end
 
+    def installation_failed(installation)
+      render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
+    end
+
     delegate :request, :current_user,
       :redirect_to, :flash, :render,
       :audit_trail_for, :schedule_response,
@@ -86,6 +94,10 @@ class InstallationsController < ActionController::Base
     def pending_credit_check(installation)
       flash[:error] = "Cannot schedule installation while credit check is pending"
       redirect_to installations_path(:city_id => installation.city_id, :view => "calendar")
+    end
+
+    def installation_failed(installation)
+      flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
     end
 
     delegate :request, :current_user,
