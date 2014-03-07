@@ -18,18 +18,12 @@ class ScheduleInstallation
     end
 
     if request.xhr?
-      begin
-        responder.schedule_installation(
-          installation: installation,
-          installation_type: installation_type,
-          city: city,
-          desired_date: desired_date,
-        )
-      rescue ActiveRecord::RecordInvalid => e
-        render :json => {:errors => [e.message] }
-      rescue ArgumentError => e
-        render :json => {:errors => ["Could not schedule installation. Start by making sure the desired date is on a business day."]}
-      end
+      responder.schedule_installation(
+        installation: installation,
+        installation_type: installation_type,
+        city: city,
+        desired_date: desired_date,
+      )
     else  # if not XHR
       begin
         responder.schedule_installation(
@@ -77,6 +71,11 @@ class InstallationsController < ActionController::Base
           installation_failed(installation)
         end
       end
+
+    rescue ActiveRecord::RecordInvalid => e
+      render :json => {:errors => [e.message] }
+    rescue ArgumentError => e
+      render :json => {:errors => ["Could not schedule installation. Start by making sure the desired date is on a business day."]}
     end
 
     private
