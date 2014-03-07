@@ -24,14 +24,6 @@ class ScheduleInstallation
       desired_date: desired_date,
     )
   end
-
-  private
-
-  delegate :request, :current_user,
-    :redirect_to, :flash, :render,
-    :audit_trail_for, :schedule_response,
-    :installations_path, :customer_provided_installations_path,
-    to: :responder
 end
 
 class InstallationsController < ActionController::Base
