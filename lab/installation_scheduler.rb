@@ -11,12 +11,7 @@ class InstallationScheduler
     desired_date = client.params[:desired_date]
 
     if installation.pending_credit_check?
-      if xhr?
-        client.render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
-      else
-        client.flash[:error] = "Cannot schedule installation while credit check is pending"
-        client.redirect_to client.installations_path(:city_id => installation.city_id, :view => "calendar") and return
-      end
+      render_pending_credit_check
       return
     end
 
@@ -59,5 +54,14 @@ class InstallationScheduler
 
   def xhr?
     client.request.xhr?
+  end
+
+  def render_pending_credit_check
+    if xhr?
+      client.render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
+    else
+      client.flash[:error] = "Cannot schedule installation while credit check is pending"
+      client.redirect_to client.installations_path(:city_id => installation.city_id, :view => "calendar")
+    end
   end
 end
