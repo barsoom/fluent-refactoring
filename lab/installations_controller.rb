@@ -25,17 +25,12 @@ class ScheduleInstallation
         desired_date: desired_date,
       )
     else  # if not XHR
-      begin
-        responder.schedule_installation(
-          installation: installation,
-          installation_type: installation_type,
-          city: city,
-          desired_date: desired_date,
-        )
-      rescue => e
-        flash[:error] = e.message
-      end
-      redirect_to(installation.customer_provided_equipment? ? customer_provided_installations_path : installations_path(:city_id => installation.city_id, :view => "calendar"))
+      responder.schedule_installation(
+        installation: installation,
+        installation_type: installation_type,
+        city: city,
+        desired_date: desired_date,
+      )
     end
   end
 
@@ -110,15 +105,21 @@ class InstallationsController < ActionController::Base
       city = opts.fetch(:city)
       desired_date = opts.fetch(:desired_date)
 
-      audit_trail_for(current_user) do
-        if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
-          if installation.scheduled_date
-            installation_scheduled(installation)
+      begin
+        audit_trail_for(current_user) do
+          if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
+            if installation.scheduled_date
+              installation_scheduled(installation)
+            end
+          else
+            installation_failed(installation)
           end
-        else
-          installation_failed(installation)
         end
+      rescue => e
+        flash[:error] = e.message
       end
+
+      redirect_to(installation.customer_provided_equipment? ? customer_provided_installations_path : installations_path(:city_id => installation.city_id, :view => "calendar"))
     end
 
     private
