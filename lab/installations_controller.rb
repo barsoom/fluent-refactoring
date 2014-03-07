@@ -22,10 +22,7 @@ class ScheduleInstallation
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
-              # A
-              date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
-              render :json => {:errors => nil, :html => schedule_response(installation, date)}
-              # end A
+              responder.installation_scheduled(installation)
             end
           else
             responder.installation_failed(installation)
@@ -41,13 +38,7 @@ class ScheduleInstallation
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
-              # A
-              if installation.customer_provided_equipment?
-                flash[:success] = %Q{Installation scheduled}
-              else
-                flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
-              end
-              # end A
+              responder.installation_scheduled(installation)
             end
           else
             responder.installation_failed(installation)
@@ -81,6 +72,11 @@ class InstallationsController < ActionController::Base
       render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
     end
 
+    def installation_scheduled(installation)
+      date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
+      render :json => {:errors => nil, :html => schedule_response(installation, date)}
+    end
+
     delegate :request, :current_user,
       :redirect_to, :flash, :render,
       :audit_trail_for, :schedule_response,
@@ -98,6 +94,14 @@ class InstallationsController < ActionController::Base
 
     def installation_failed(installation)
       flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
+    end
+
+    def installation_scheduled(installation)
+      if installation.customer_provided_equipment?
+        flash[:success] = %Q{Installation scheduled}
+      else
+        flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
+      end
     end
 
     delegate :request, :current_user,
