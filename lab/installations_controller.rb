@@ -1,10 +1,17 @@
 require "attr_extras"
 
 class ScheduleInstallation
-  pattr_initialize :controller, :installation, :city
+  def initialize(opts)
+    @controller = opts.fetch(:controller)
+    @installation = opts.fetch(:installation)
+    @city = opts.fetch(:city)
+    @installation_type = opts.fetch(:installation_type)
+    @desired_date = opts.fetch(:desired_date)
+  end
+
+  attr_private :controller, :installation, :city, :installation_type, :desired_date
 
   def run
-    desired_date = params[:desired_date]
     if request.xhr?
       begin
         if installation.pending_credit_check?
@@ -12,7 +19,7 @@ class ScheduleInstallation
           return
         end
         audit_trail_for(current_user) do
-          if installation.schedule!(desired_date, :installation_type => params[:installation_type], :city => city)
+          if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
               date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
               render :json => {:errors => nil, :html => schedule_response(installation, date)}
@@ -33,7 +40,7 @@ class ScheduleInstallation
       end
       begin
         audit_trail_for(current_user) do
-          if installation.schedule!(desired_date, :installation_type => params[:installation_type], :city => city)
+          if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
               if installation.customer_provided_equipment?
                 flash[:success] = %Q{Installation scheduled}
@@ -54,7 +61,7 @@ class ScheduleInstallation
 
   private
 
-  delegate :params, :request, :redirect_to, :flash, :render, :current_user, :audit_trail_for,
+  delegate :request, :redirect_to, :flash, :render, :current_user, :audit_trail_for,
     :schedule_response,
     :installations_path, :customer_provided_installations_path,
     to: :controller
@@ -64,7 +71,13 @@ class InstallationsController < ActionController::Base
   # lots more stuff...
 
   def schedule
-    ScheduleInstallation.new(self, @installation, @city).run
+    ScheduleInstallation.new(
+      controller: self,
+      installation: @installation,
+      city: @city,
+      installation_type: params[:installation_type],
+      desired_date: params[:desired_date],
+    ).run
   end
 
   # lots more stuff...
