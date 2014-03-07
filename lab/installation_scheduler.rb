@@ -7,6 +7,19 @@ class InstallationScheduler
     end
   end
 
+  def render_success
+    if xhr?
+      date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
+      client.render :json => {:errors => nil, :html => client.schedule_response(installation, date)}
+    else
+      if installation.customer_provided_equipment?
+        client.flash[:success] = %Q{Installation scheduled}
+      else
+        client.flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
+      end
+    end
+  end
+
   def run
     desired_date = client.params[:desired_date]
 
@@ -19,8 +32,7 @@ class InstallationScheduler
       begin
         if installation.schedule!(desired_date, :installation_type => client.params[:installation_type], :city => installation.city)
           if installation.scheduled_date
-            date = installation.scheduled_date.in_time_zone(installation.city.timezone).to_date
-            client.render :json => {:errors => nil, :html => client.schedule_response(installation, date)}
+            render_success
           end
         else
           client.render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
@@ -32,13 +44,9 @@ class InstallationScheduler
       end
     else
       begin
-        if installation.schedule!(desired_date, :installation_type => client.params[:installation_type], :city => @city)
+        if installation.schedule!(desired_date, :installation_type => client.params[:installation_type], :city => installation.city)
           if installation.scheduled_date
-            if installation.customer_provided_equipment?
-              client.flash[:success] = %Q{Installation scheduled}
-            else
-              client.flash[:success] = %Q{Installation scheduled! Don't forget to order the equipment also.}
-            end
+            render_success
           end
         else
           client.flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
