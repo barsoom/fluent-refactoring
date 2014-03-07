@@ -12,12 +12,13 @@ class ScheduleInstallation
   attr_private :responder, :installation, :city, :installation_type, :desired_date
 
   def run
+    if installation.pending_credit_check?
+      responder.pending_credit_check(installation)
+      return
+    end
+
     if request.xhr?
       begin
-        if installation.pending_credit_check?
-          responder.pending_credit_check(installation)
-          return
-        end
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
             if installation.scheduled_date
@@ -33,11 +34,7 @@ class ScheduleInstallation
       rescue ArgumentError => e
         render :json => {:errors => ["Could not schedule installation. Start by making sure the desired date is on a business day."]}
       end
-    else
-      if installation.pending_credit_check?
-        responder.pending_credit_check(installation)
-        return
-      end
+    else  # if not XHR
       begin
         audit_trail_for(current_user) do
           if installation.schedule!(desired_date, :installation_type => installation_type, :city => city)
