@@ -20,6 +20,14 @@ class InstallationScheduler
     end
   end
 
+  def render_error(error)
+    if xhr?
+        client.render :json => {:errors => [error]}
+    else
+      client.flash[:error] = error
+    end
+  end
+
   def run
     desired_date = client.params[:desired_date]
 
@@ -38,9 +46,9 @@ class InstallationScheduler
           client.render :json => {:errors => [%Q{Could not update installation. #{installation.errors.full_messages.join(' ')}}] }
         end
       rescue ActiveRecord::RecordInvalid => e
-        client.render :json => {:errors => [e.message] }
+        render_error e.message
       rescue ArgumentError => e
-        client.render :json => {:errors => ["Could not schedule installation. Start by making sure the desired date is on a business day."]}
+        render_error "Could not schedule installation. Start by making sure the desired date is on a business day."
       end
     else
       begin
@@ -49,10 +57,10 @@ class InstallationScheduler
             render_success
           end
         else
-          client.flash[:error] = %Q{Could not schedule installation, check the phase of the moon}
+          render_error %Q{Could not schedule installation, check the phase of the moon}
         end
       rescue => e
-        client.flash[:error] = e.message
+        render_error(e.message)
       end
       client.redirect_to(installation.customer_provided_equipment? ? client.customer_provided_installations_path : client.installations_path(:city_id => installation.city_id, :view => "calendar"))
     end
