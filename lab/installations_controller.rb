@@ -2,19 +2,20 @@ require "attr_extras"
 
 class ScheduleInstallation
   def initialize(opts)
-    @controller = opts.fetch(:controller)
+    @responder = opts.fetch(:responder)
     @installation = opts.fetch(:installation)
     @city = opts.fetch(:city)
     @installation_type = opts.fetch(:installation_type)
     @desired_date = opts.fetch(:desired_date)
   end
 
-  attr_private :controller, :installation, :city, :installation_type, :desired_date
+  attr_private :responder, :installation, :city, :installation_type, :desired_date
 
   def run
     if request.xhr?
       begin
         if installation.pending_credit_check?
+          # event: pending
           render :json => {:errors => ["Cannot schedule installation while credit check is pending"]}, :status => 400
           return
         end
@@ -35,6 +36,7 @@ class ScheduleInstallation
       end
     else
       if installation.pending_credit_check?
+        # pending
         flash[:error] = "Cannot schedule installation while credit check is pending"
         redirect_to installations_path(:city_id => installation.city_id, :view => "calendar") and return
       end
@@ -61,18 +63,39 @@ class ScheduleInstallation
 
   private
 
-  delegate :request, :redirect_to, :flash, :render, :current_user, :audit_trail_for,
-    :schedule_response,
+  delegate :request, :current_user,
+    :redirect_to, :flash, :render,
+    :audit_trail_for, :schedule_response,
     :installations_path, :customer_provided_installations_path,
-    to: :controller
+    to: :responder
 end
 
 class InstallationsController < ActionController::Base
-  # lots more stuff...
+  class ScheduleAjaxResponder
+    pattr_initialize :controller
+
+    delegate :request, :current_user,
+      :redirect_to, :flash, :render,
+      :audit_trail_for, :schedule_response,
+      :installations_path, :customer_provided_installations_path,
+      to: :controller
+  end
+
+  class ScheduleHtmlResponder
+    pattr_initialize :controller
+
+    delegate :request, :current_user,
+      :redirect_to, :flash, :render,
+      :audit_trail_for, :schedule_response,
+      :installations_path, :customer_provided_installations_path,
+      to: :controller
+  end
 
   def schedule
+    responder = request.xhr? ? ScheduleAjaxResponder.new(self) : ScheduleHtmlResponder.new(self)
+
     ScheduleInstallation.new(
-      controller: self,
+      responder: responder,
       installation: @installation,
       city: @city,
       installation_type: params[:installation_type],
