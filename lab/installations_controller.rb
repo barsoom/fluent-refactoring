@@ -17,21 +17,12 @@ class ScheduleInstallation
       return
     end
 
-    if request.xhr?
-      responder.schedule_installation(
-        installation: installation,
-        installation_type: installation_type,
-        city: city,
-        desired_date: desired_date,
-      )
-    else  # if not XHR
-      responder.schedule_installation(
-        installation: installation,
-        installation_type: installation_type,
-        city: city,
-        desired_date: desired_date,
-      )
-    end
+    responder.schedule_installation(
+      installation: installation,
+      installation_type: installation_type,
+      city: city,
+      desired_date: desired_date,
+    )
   end
 
   private
