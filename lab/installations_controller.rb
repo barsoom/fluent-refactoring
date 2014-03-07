@@ -8,6 +8,5 @@ class InstallationsController < ActionController::Base
     InstallationScheduler.new(self, @installation, current_user).run
   end
 
-
   # lots more stuff...
 end
